@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8'>
+  <title>Diff</title>
+</head>
+
+<body>
+  <style>
+    .diff {
+      border: 1px solid #C0C0C0;
+      border-collapse: collapse;
+      padding: 5px;
+    }
+
+    .diff th {
+      border: 1px solid #C0C0C0;
+      padding: 5px;
+      background: #F0F0F0;
+    }
+
+    .diff td {
+      border: 1px solid #C0C0C0;
+      padding: 5px;
+    }
+
+    .diff .changed {
+      background: #FF9999;
+    }
+  </style>
+  <table class="diff">
+    <thead>
+      <tr>
+        <th>Bytes Range</th>
+        <th><%= titleA %></th>
+        <th><%= titleB %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% data.forEach(function (row) { %>
+        <tr class="<%= row.changed ? 'changed' : '' %>">
+          <td><%= `${ row.bytesStart }-${ row.bytesEnd }` %></td>
+          <td>
+            <strong><%= row.elementA.label %></strong> <code><%= row.elementA.type %></code>
+          </td>
+            <td>
+            <strong><%= row.elementB.label %></strong> <code><%= row.elementB.type %></code>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</body>
+
+</html>

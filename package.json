@@ -1,0 +1,29 @@
+{
+  "name": "hardhat-storage-layout-diff",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Compare storage layouts between two contracts",
+  "keywords": [
+    "hardhat",
+    "natspec",
+    "buidler",
+    "solidity",
+    "solc",
+    "smart-contracts",
+    "ethereum",
+    "blockchain",
+    "wow"
+  ],
+  "repository": "https://github.com/ItsNickBarry/hardhat-storage-layout-diff",
+  "author": "Nick Barry",
+  "main": "index.js",
+  "peerDependencies": {
+    "hardhat": "^2.0.0"
+  },
+  "devDependencies": {
+    "hardhat": "^2.0.0"
+  },
+  "dependencies": {
+    "ejs": "^3.1.6"
+  }
+}
