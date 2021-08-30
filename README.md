@@ -16,6 +16,8 @@ Load plugin in Hardhat config:
 require('hardhat-storage-layout-diff');
 ```
 
+Run the included Hardhat task:
+
 ```bash
-yarn run hardhat storage-layout-diff
+yarn run hardhat storage-layout-diff --a [CONTRACT_A_FULLY_QUALIFIED_NAME] --b [CONTRACT_B_FULLY_QUALIFIED_NAME]
 ```
