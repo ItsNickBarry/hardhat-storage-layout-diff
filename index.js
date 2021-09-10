@@ -26,16 +26,7 @@ task(
 ).addOptionalParam(
   'bRef', 'Git reference where contract B is defined'
 ).setAction(async function ({ a, b, aRef, bRef }, hre) {
-  const outputDirectory = path.resolve(hre.config.paths.root, '.git-tmp');
-
-  if (fs.existsSync(outputDirectory)) {
-    fs.rmdirSync(outputDirectory, { recursive: true });
-  }
-
-  fs.mkdirSync(outputDirectory, { recursive: true });
-
   const repository = simpleGit();
-
   await repository.init();
 
   const { latest } = await repository.log();
