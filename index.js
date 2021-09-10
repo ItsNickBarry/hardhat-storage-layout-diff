@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const ejs = require('ejs');
+const simpleGit = require('simple-git');
 
 const {
   TASK_COMPILE,
@@ -20,13 +21,36 @@ task(
   'a', 'First contract to diff'
 ).addParam(
   'b', 'Second contract to diff'
-).setAction(async function ({ a, b }, hre) {
-  await hre.run(TASK_COMPILE);
+).addOptionalParam(
+  'aRef', 'Git reference where contract A is defined'
+).addOptionalParam(
+  'bRef', 'Git reference where contract B is defined'
+).setAction(async function ({ a, b, aRef, bRef }, hre) {
+  const outputDirectory = path.resolve(hre.config.paths.root, '.git-tmp');
 
-  const parseStorageLayout = async function (contractName) {
+  if (fs.existsSync(outputDirectory)) {
+    fs.rmdirSync(outputDirectory, { recursive: true });
+  }
+
+  fs.mkdirSync(outputDirectory, { recursive: true });
+
+  const repository = simpleGit();
+
+  await repository.init();
+
+  const { latest } = await repository.log();
+  aRef = aRef || latest.hash;
+  bRef = bRef || latest.hash;
+
+  const parseStorageLayout = async function (contractName, ref) {
+    await repository.checkout(ref);
+    await hre.run(TASK_COMPILE);
+
     const info = await hre.artifacts.getBuildInfo(contractName);
     const [file, contract] = contractName.split(':');
-    const { storage, types } = info.output.contracts[file][contract].storageLayout
+    const { storage, types } = info.output.contracts[file][contract].storageLayout;
+
+    await repository.checkout('-');
 
     return storage.reduce(function (acc, { label, offset, slot, type}) {
       const size = parseInt(types[type].numberOfBytes);
@@ -58,7 +82,7 @@ task(
 
   const mergeStorageLayouts = function (storageA, storageB) {
     const equal = function (a, b) {
-      return a.label == b.label && a.type.replace(/\[\d*\]/, '[]') == b.type.replace(/\[\d*\]/, '[]');
+      return a.label == b.label && a.type?.replace(/\[\d*\]/, '[]') == b.type?.replace(/\[\d*\]/, '[]');
     };
 
     let bytesIndex = 0;
@@ -111,8 +135,8 @@ task(
     return output;
   };
 
-  const storageA = await parseStorageLayout(a);
-  const storageB = await parseStorageLayout(b);
+  const storageA = await parseStorageLayout(a, aRef);
+  const storageB = await parseStorageLayout(b, bRef);
   const data = mergeStorageLayouts(storageA, storageB);
 
   ejs.renderFile(path.resolve(__dirname, 'template.html.ejs'), { data, titleA: a, titleB: b }, {}, function (err, result) {
