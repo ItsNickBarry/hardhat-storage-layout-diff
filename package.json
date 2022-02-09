@@ -1,6 +1,6 @@
 {
   "name": "hardhat-storage-layout-diff",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "MIT",
   "description": "Compare storage layouts between two contracts",
   "keywords": [
