@@ -21,10 +21,10 @@
     "hardhat": "^2.0.0"
   },
   "devDependencies": {
-    "hardhat": "^2.0.0",
-    "simple-git": "^2.45.1"
+    "hardhat": "^2.0.0"
   },
   "dependencies": {
-    "ejs": "^3.1.6"
+    "ejs": "^3.1.6",
+    "simple-git": "^3.1.1"
   }
 }
