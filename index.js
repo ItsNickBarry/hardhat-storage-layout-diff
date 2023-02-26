@@ -2,12 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const ejs = require('ejs');
 const simpleGit = require('simple-git');
+const { parseFullyQualifiedName } = require('hardhat/utils/contract-names');
 
 const {
   TASK_COMPILE,
 } = require('hardhat/builtin-tasks/task-names');
 
-const loadStorageLayout = async function (contractName, ref) {
+const loadStorageLayout = async function (fullName, ref) {
   const repository = simpleGit();
   await repository.init();
   const { latest } = await repository.log();
@@ -17,12 +18,12 @@ const loadStorageLayout = async function (contractName, ref) {
   await repository.checkout(ref || latest.hash);
   await hre.run(TASK_COMPILE);
 
-  const info = await hre.artifacts.getBuildInfo(contractName);
-  const [file, contract] = contractName.split(':');
+  const info = await hre.artifacts.getBuildInfo(fullName);
+  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
 
   await repository.checkout('-');
 
-  return parseStorageLayout(info.output.contracts[file][contract].storageLayout)
+  return parseStorageLayout(info.output.contracts[sourceName][contractName].storageLayout)
 }
 
 const parseStorageLayout = function ({ storage, types }) {
@@ -141,20 +142,20 @@ task(
     fs.mkdirSync(outputDirectory, { recursive: true });
   }
 
-  for (let contractName of await hre.artifacts.getAllFullyQualifiedNames()) {
-    if (config.only.length && !config.only.some(m => contractName.match(m))) continue;
-    if (config.except.length && config.except.some(m => contractName.match(m))) continue;
+  for (let fullName of await hre.artifacts.getAllFullyQualifiedNames()) {
+    if (config.only.length && !config.only.some(m => fullName.match(m))) continue;
+    if (config.except.length && config.except.some(m => fullName.match(m))) continue;
 
-    const info = await hre.artifacts.getBuildInfo(contractName);
-    const [file, contract] = contractName.split(':');
-    const { storage, types } = info.output.contracts[file][contract].storageLayout;
+    const info = await hre.artifacts.getBuildInfo(fullName);
+    const { sourceName, contractName } = parseFullyQualifiedName(fullName);
+    const { storage, types } = info.output.contracts[sourceName][contractName].storageLayout;
 
     if (!storage.length) continue;
 
     const destination = path.resolve(
       outputDirectory,
       config.flat ? '' : '',
-      contractName
+      fullName
     ) + '.json';
 
     if (!fs.existsSync(path.dirname(destination))) {
