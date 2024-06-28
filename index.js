@@ -20,7 +20,7 @@ extendConfig(function (config, userConfig) {
     userConfig.storageLayoutDiff,
   );
 
-  for (const compiler of hre.config.solidity.compilers) {
+  for (const compiler of config.solidity.compilers) {
     const outputSelection = compiler.settings.outputSelection['*']['*'];
 
     if (!outputSelection.includes('storageLayout')) {
