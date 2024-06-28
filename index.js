@@ -11,6 +11,8 @@ extendConfig(function (config, userConfig) {
   config.storageLayoutDiff = Object.assign(
     {
       path: './storage_layout',
+      clear: false,
+      flat: false,
       only: [],
       except: [],
       spacing: 2,

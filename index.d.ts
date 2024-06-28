@@ -4,6 +4,8 @@ declare module 'hardhat/types/config' {
   interface HardhatUserConfig {
     storageLayoutDiff?: {
       path?: string;
+      clear?: boolean;
+      flat?: boolean;
       only?: string[];
       except?: string[];
       spacing?: number;
@@ -13,6 +15,8 @@ declare module 'hardhat/types/config' {
   interface HardhatConfig {
     storageLayoutDiff: {
       path: string;
+      clear: boolean;
+      flat: boolean;
       only: string[];
       except: string[];
       spacing: number;
