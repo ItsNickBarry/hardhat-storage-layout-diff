@@ -44,3 +44,17 @@ npx hardhat storage-layout-check --source [PATH_TO_LAYOUT_JSON] --b [CONTRACT_B_
 # or
 yarn run hardhat storage-layout-check --source [PATH_TO_LAYOUT_JSON] --b [CONTRACT_B_FULLY_QUALIFIED_NAME]
 ```
+
+## Development
+
+Install dependencies via Yarn:
+
+```bash
+yarn install
+```
+
+Setup Husky to format code on commit:
+
+```bash
+yarn prepare
+```
