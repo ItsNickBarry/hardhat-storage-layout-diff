@@ -3,8 +3,19 @@ const path = require('path');
 const ejs = require('ejs');
 const simpleGit = require('simple-git');
 const { parseFullyQualifiedName } = require('hardhat/utils/contract-names');
+const { extendConfig } = require('hardhat/config');
 
 const { TASK_COMPILE } = require('hardhat/builtin-tasks/task-names');
+
+extendConfig(function (config, userConfig) {
+  for (const compiler of hre.config.solidity.compilers) {
+    const outputSelection = compiler.settings.outputSelection['*']['*'];
+
+    if (!outputSelection.includes('storageLayout')) {
+      outputSelection.push('storageLayout');
+    }
+  }
+});
 
 const loadStorageLayout = async function (fullName, ref) {
   const repository = simpleGit();
@@ -112,14 +123,6 @@ const mergeStorageLayouts = function (storageA, storageB) {
 
   return output;
 };
-
-task(TASK_COMPILE, async function (args, hre, runSuper) {
-  for (let compiler of hre.config.solidity.compilers) {
-    compiler.settings.outputSelection['*']['*'].push('storageLayout');
-  }
-
-  await runSuper();
-});
 
 task('export-storage-layout').setAction(async function () {
   // TODO: define as Hardhat config
