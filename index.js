@@ -8,6 +8,16 @@ const { extendConfig } = require('hardhat/config');
 const { TASK_COMPILE } = require('hardhat/builtin-tasks/task-names');
 
 extendConfig(function (config, userConfig) {
+  config.storageLayoutDiff = Object.assign(
+    {
+      path: './storage_layout',
+      only: [],
+      except: [],
+      spacing: 2,
+    },
+    userConfig.storageLayoutDiff,
+  );
+
   for (const compiler of hre.config.solidity.compilers) {
     const outputSelection = compiler.settings.outputSelection['*']['*'];
 
@@ -124,9 +134,8 @@ const mergeStorageLayouts = function (storageA, storageB) {
   return output;
 };
 
-task('export-storage-layout').setAction(async function () {
-  // TODO: define as Hardhat config
-  const config = { path: './storage_layout', only: [], except: [], spacing: 2 };
+task('export-storage-layout').setAction(async function (args, hre) {
+  const config = hre.config.storageLayoutDiff;
 
   const outputDirectory = path.resolve(hre.config.paths.root, config.path);
 
