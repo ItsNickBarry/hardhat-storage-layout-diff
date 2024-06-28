@@ -4,6 +4,7 @@
   "trailingComma": "all",
   "bracketSpacing": true,
   "plugins": [
+    "prettier-plugin-ejs",
     "prettier-plugin-solidity",
     "@trivago/prettier-plugin-sort-imports"
   ]
