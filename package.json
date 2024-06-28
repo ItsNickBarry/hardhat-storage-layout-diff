@@ -17,6 +17,7 @@
   "repository": "https://github.com/ItsNickBarry/hardhat-storage-layout-diff",
   "author": "Nick Barry",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "prepare": "husky",
     "prettier": "prettier --write ."

@@ -18,6 +18,17 @@ Load plugin in Hardhat config:
 require('hardhat-storage-layout-diff');
 ```
 
+Add configuration under the `storageLayoutDiff` key:
+
+| option    | description                                                                                                | default                                                        |
+| --------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `path`    | path to HTML export directory (relative to Hardhat root)                                                   | `'./storage_layout'`                                           |
+| `clear`   | whether to delete old output in `path` on output generation                                                | `false`                                                        |
+| `flat`    | whether to flatten output directory (may cause name collisions)                                            | `false`                                                        |
+| `only`    | `Array` of `String` matchers used to select included contracts, defaults to all contracts if `length` is 0 | `['^contracts/']` (dependent on Hardhat `paths` configuration) |
+| `except`  | `Array` of `String` matchers used to exclude contracts                                                     | `[]`                                                           |
+| `spacing` | number of spaces per indentation level of formatted output                                                 | `2`                                                            |
+
 Export storage layouts:
 
 ```bash
