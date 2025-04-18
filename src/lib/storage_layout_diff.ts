@@ -214,7 +214,7 @@ export const mergeStorageLayouts = function (
 export const collateSlotEntries = (
   types: StorageLayoutTypes,
   storage: Entry[],
-) => {
+): Slot[] => {
   const reducer = (slots: Slot[], entry: Entry) => {
     const type = types[entry.type];
 
@@ -231,78 +231,51 @@ export const collateSlotEntries = (
       slots.push(slot);
     }
 
-    if (type.encoding === 'mapping') {
-      // a mapping slot reserves 32 bytes, but writes no data
-      const sizeReserved = 32;
-      const sizeFilled = 0;
+    if (type.encoding === 'inplace' && (type.members || type.base)) {
+      // type is either a struct or a fixed array
+      const members: Entry[] = [];
 
-      slot.sizeReserved += sizeReserved;
-      slot.sizeFilled += sizeFilled;
-
-      slot.entries.push({
-        type: entry.type,
-        label: entry.label,
-        typeLabel: type.label,
-        sizeFilled,
-      });
-    } else if (type.encoding === 'dynamic_array') {
-      // a dynamic array slot stores the array length using 32 bytes
-      const sizeReserved = 32;
-      const sizeFilled = 32;
-
-      slot.sizeReserved += sizeReserved;
-      slot.sizeFilled += sizeFilled;
-
-      slot.entries.push({
-        type: entry.type,
-        label: entry.label,
-        typeLabel: type.label,
-        sizeFilled,
-      });
-    } else {
-      // type encoding is 'inplace', and might not fill its slot
       if (type.members) {
         // type is a struct
-        const members: Entry[] = type.members.map((m) => ({
-          type: m.type,
-          label: `${entry.label}.${m.label}`,
-        }));
-
-        members.reduce(reducer, slots);
-
-        // struct reserves the entirety of its final slot
-        // retrieve the slot from the array in case a new one was added during the recursive call
-        slots[slots.length - 1].sizeReserved = 32;
+        for (let i = 0; i < type.members.length; i++) {
+          members.push({
+            type: type.members[i].type,
+            label: `${entry.label}.${type.members[i].label}`,
+          });
+        }
       } else if (type.base) {
         // type is a fixed array
         const [, count] = type.label.match(/.+\[(\d+)\]$/)!;
 
-        const members: Entry[] = [];
-
         for (let i = 0; i < Number(count); i++) {
           members.push({ type: type.base, label: `${entry.label}[${i}]` });
         }
-
-        members.reduce(reducer, slots);
-
-        // array reserves the entirety of its final slot
-        // retrieve the slot from the array in case a new one was added during the recursive call
-        slots[slots.length - 1].sizeReserved = 32;
-      } else {
-        // type is a value type
-        const sizeReserved = Number(type.numberOfBytes);
-        const sizeFilled = sizeReserved;
-
-        slot.sizeReserved += sizeReserved;
-        slot.sizeFilled += sizeFilled;
-
-        slot.entries.push({
-          type: entry.type,
-          label: entry.label,
-          typeLabel: type.label,
-          sizeFilled,
-        });
       }
+
+      // process the members recursively, operating on the same `slots` array
+      members.reduce(reducer, slots);
+
+      // structs and fixed arrays reserve the entirety of their final slots
+      // retrieve the slot from the array in case a new one was added during the recursive call
+      slots[slots.length - 1].sizeReserved = 32;
+    } else {
+      // type is a value type, a dynamic array, or a mapping
+
+      // a dynamic array slot stores the array length using 32 bytes
+      // a mapping slot reserves 32 bytes, but contains no data
+
+      const sizeReserved = Number(type.numberOfBytes);
+      const sizeFilled = type.encoding === 'mapping' ? 0 : sizeReserved;
+
+      slot.sizeReserved += sizeReserved;
+      slot.sizeFilled += sizeFilled;
+
+      slot.entries.push({
+        type: entry.type,
+        label: entry.label,
+        typeLabel: type.label,
+        sizeFilled,
+      });
     }
 
     return slots;
