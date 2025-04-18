@@ -1,5 +1,5 @@
 import {
-  collateSlotEntries,
+  collateStorageLayout,
   getStorageLayout,
   visualizeSlot,
 } from '../lib/storage_layout_diff';
@@ -13,9 +13,9 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
   .setAction(async (args, hre) => {
     await hre.run(TASK_COMPILE);
 
-    const { storage, types } = await getStorageLayout(hre, args.contract);
+    const storageLayout = await getStorageLayout(hre, args.contract);
 
-    const slots = collateSlotEntries(types, storage);
+    const slots = collateStorageLayout(storageLayout);
 
     const table = new Table({
       style: { head: [], border: [], 'padding-left': 2, 'padding-right': 2 },

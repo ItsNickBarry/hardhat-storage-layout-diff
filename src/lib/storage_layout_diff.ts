@@ -5,14 +5,6 @@ import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
 import simpleGit from 'simple-git';
 
-export type StorageType = {
-  encoding: 'inplace' | 'mapping' | 'dynamic_array';
-  label: string;
-  numberOfBytes: string;
-  base?: string;
-  members?: StorageElement[];
-};
-
 export type StorageElement = {
   contract: string;
   label: string;
@@ -21,13 +13,23 @@ export type StorageElement = {
   type: string;
 };
 
-export type StorageLayoutTypes = {
+export type StorageType = {
+  encoding: 'inplace' | 'mapping' | 'dynamic_array';
+  label: string;
+  numberOfBytes: string;
+  // `base` is present on array types and represents the type of each array element
+  base?: string;
+  // `members` is present on struct types and is a list of component types
+  members?: StorageElement[];
+};
+
+export type StorageTypes = {
   [name: string]: StorageType;
 };
 
 export type StorageLayout = {
   storage: StorageElement[];
-  types: StorageLayoutTypes;
+  types: StorageTypes;
 };
 
 export type ParsedStorageElement = Partial<
@@ -70,7 +72,7 @@ export const visualizeSlot = (
 export const getStorageLayout = async (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
-) => {
+): Promise<StorageLayout> => {
   const info = await hre.artifacts.getBuildInfo(fullName);
 
   if (!info) {
@@ -79,8 +81,7 @@ export const getStorageLayout = async (
 
   const { sourceName, contractName } = parseFullyQualifiedName(fullName);
 
-  return (info.output.contracts[sourceName][contractName] as any)
-    .storageLayout as StorageLayout;
+  return (info.output.contracts[sourceName][contractName] as any).storageLayout;
 };
 
 export const loadStorageLayout = async function (
@@ -211,10 +212,9 @@ export const mergeStorageLayouts = function (
   return output;
 };
 
-export const collateSlotEntries = (
-  types: StorageLayoutTypes,
-  storage: Entry[],
-): Slot[] => {
+export const collateStorageLayout = (storageLayout: StorageLayout): Slot[] => {
+  const { types, storage } = storageLayout;
+
   const reducer = (slots: Slot[], entry: Entry) => {
     const type = types[entry.type];
 
