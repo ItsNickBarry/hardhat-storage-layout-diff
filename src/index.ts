@@ -45,6 +45,22 @@ extendConfig(function (config, userConfig) {
   }
 });
 
+const getStorageLayout = async (
+  hre: HardhatRuntimeEnvironment,
+  fullName: string,
+) => {
+  const info = await hre.artifacts.getBuildInfo(fullName);
+
+  if (!info) {
+    throw new HardhatPluginError(pkg.name, `contract not found at ref`);
+  }
+
+  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
+
+  return (info.output.contracts[sourceName][contractName] as any)
+    .storageLayout as StorageLayout;
+};
+
 const loadStorageLayout = async function (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
@@ -62,22 +78,11 @@ const loadStorageLayout = async function (
 
   await repository.checkout(ref || latest.hash);
   await hre.run(TASK_COMPILE);
-
-  const info = await hre.artifacts.getBuildInfo(fullName);
-
-  if (!info) {
-    throw new HardhatPluginError(pkg.name, `contract not found at ref`);
-  }
-
-  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
-
   await repository.checkout('-');
 
-  const compilerOutputContract = info.output.contracts[sourceName][
-    contractName
-  ] as unknown as { storageLayout: StorageLayout };
+  const storageLayout = await getStorageLayout(hre, fullName);
 
-  return parseStorageLayout(compilerOutputContract.storageLayout);
+  return parseStorageLayout(storageLayout);
 };
 
 const parseStorageLayout = function (storageLayout: StorageLayout) {
@@ -202,13 +207,8 @@ task(TASK_EXPORT_STORAGE_LAYOUT).setAction(async function (args, hre) {
     if (config.except.length && config.except.some((m) => fullName.match(m)))
       continue;
 
-    const info = await hre.artifacts.getBuildInfo(fullName);
-    const { sourceName, contractName } = parseFullyQualifiedName(fullName);
-
-    const compilerOutputContract = info!.output.contracts[sourceName][
-      contractName
-    ] as unknown as { storageLayout: StorageLayout };
-    const { storage, types } = compilerOutputContract.storageLayout;
+    const storageLayout = await getStorageLayout(hre, fullName);
+    const { storage, types } = storageLayout;
 
     if (!storage.length) continue;
 
