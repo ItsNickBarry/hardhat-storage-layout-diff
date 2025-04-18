@@ -327,8 +327,20 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
     const filled = '▰';
     const empty = '▱';
 
-    for (const entry of storage) {
+    for (let i = 0; i < storage.length; i++) {
+      const entry = storage[i];
       const size = parseInt(types[entry.type].numberOfBytes);
+
+      let slotFill = 0;
+
+      for (let j = i; j < storage.length; j++) {
+        const nextEntry = storage[j];
+
+        if (nextEntry.slot !== entry.slot) break;
+
+        slotFill =
+          nextEntry.offset + parseInt(types[nextEntry.type].numberOfBytes);
+      }
 
       table.push([
         { content: entry.slot },
@@ -337,7 +349,8 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
         { content: entry.label },
         {
           content:
-            empty.repeat(32 - size - entry.offset) +
+            ' '.repeat(32 - slotFill) +
+            empty.repeat(slotFill - size - entry.offset) +
             filled.repeat(size) +
             empty.repeat(entry.offset),
         },
