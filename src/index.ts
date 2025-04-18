@@ -96,8 +96,14 @@ const loadStorageLayout = async function (
   }
 
   await repository.checkout(ref || latest.hash);
-  await hre.run(TASK_COMPILE);
-  await repository.checkout('-');
+
+  try {
+    await hre.run(TASK_COMPILE);
+  } catch (error) {
+    throw error;
+  } finally {
+    await repository.checkout('-');
+  }
 
   const storageLayout = await getStorageLayout(hre, fullName);
 
