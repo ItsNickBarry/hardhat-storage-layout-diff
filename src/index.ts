@@ -354,57 +354,143 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
       { content: 'visualization (right to left)' },
     ]);
 
-    for (let i = 0; i < storage.length; i++) {
-      const entry = storage[i];
+    type Entry = {
+      type: string;
+      label: string;
+      sizeFilled?: number;
+    };
+
+    type Slot = {
+      id: bigint;
+      sizeReserved: number;
+      sizeFilled: number;
+      entries: Entry[];
+    };
+
+    const slots: Slot[] = [
+      { id: 0n, sizeReserved: 0, sizeFilled: 0, entries: [] },
+    ];
+
+    const proc = (slots: Slot[], entries: Entry[], index = 0) => {
+      let slot = slots[slots.length - 1];
+
+      const entry = entries[index];
+      if (!entry) return;
       const type = types[entry.type];
 
-      const sizeReserved = Number(type.numberOfBytes);
+      // create a new slot if current entry requires it
 
-      // TODO: trim size in case of array that doesn't fill last slot
-      let sizeOccupied = sizeReserved;
+      if (
+        slot.entries.length !== 0 &&
+        32 - slot.sizeReserved < Number(type.numberOfBytes)
+      ) {
+        slot = {
+          id: slot.id + 1n,
+          sizeReserved: 0,
+          sizeFilled: 0,
+          entries: [],
+        };
+        slots.push(slot);
+      }
 
-      // determine how much of slot is reserved, looking ahead at next entry if necessary
-
-      let slotSizeReserved;
-
-      if (type.encoding === 'dynamic_array') {
-        // a dynamic array slot stores the array length using 32 bytes
-        slotSizeReserved = 32;
-      } else if (type.encoding === 'mapping') {
+      if (type.encoding === 'mapping') {
         // a mapping slot reserves 32 bytes, but writes no data
-        slotSizeReserved = 0;
-        sizeOccupied = 0;
+        const sizeReserved = 32;
+        const sizeFilled = 0;
+
+        slot.sizeReserved += sizeReserved;
+        slot.sizeFilled += sizeFilled;
+
+        slot.entries.push({
+          type: entry.type,
+          label: entry.label,
+          sizeFilled,
+        });
+      } else if (type.encoding === 'dynamic_array') {
+        // a dynamic array slot stores the array length using 32 bytes
+        const sizeReserved = 32;
+        const sizeFilled = 32;
+
+        slot.sizeReserved += sizeReserved;
+        slot.sizeFilled += sizeFilled;
+
+        slot.entries.push({
+          type: entry.type,
+          label: entry.label,
+          sizeFilled,
+        });
       } else {
         // type encoding is 'inplace', and might not fill its slot
-        slotSizeReserved = Math.min(32, entry.offset + sizeReserved);
+        if (type.members) {
+          // type is a struct
 
-        if (slotSizeReserved < 32) {
-          for (let j = i + 1; j < storage.length; j++) {
-            const nextEntry = storage[j];
+          const members: Entry[] = type.members.map((m) => ({
+            type: m.type,
+            label: `${entry.label}.${m.label}`,
+          }));
 
-            if (nextEntry.slot !== entry.slot) break;
+          proc(slots, members);
 
-            slotSizeReserved += Number(types[nextEntry.type].numberOfBytes);
+          // struct reserves the entirety of its final slot
+          // retrieve the slot from the array in case a new one was added during the recursive call
+          slots[slots.length - 1].sizeReserved = 32;
+        } else if (type.base) {
+          // type is a fixed array
+
+          const [, count] = type.label.match(/.+\[(\d+)\]$/)!;
+
+          const members: Entry[] = [];
+
+          for (let i = 0; i < Number(count); i++) {
+            members.push({ type: type.base, label: `${entry.label}[${i}]` });
           }
+
+          proc(slots, members);
+
+          // array reserves the entirety of its final slot
+          // retrieve the slot from the array in case a new one was added during the recursive call
+          slots[slots.length - 1].sizeReserved = 32;
+        } else {
+          // type is a value type
+          const sizeReserved = Number(type.numberOfBytes);
+          const sizeFilled = sizeReserved;
+
+          slot.sizeReserved += sizeReserved;
+          slot.sizeFilled += sizeFilled;
+
+          slot.entries.push({
+            type: entry.type,
+            label: entry.label,
+            sizeFilled,
+          });
         }
       }
 
-      for (let j = 0; j < Math.ceil(sizeReserved / 32); j++) {
-        const slot = (BigInt(entry.slot) + BigInt(j)).toString();
+      proc(slots, entries, index + 1);
+    };
 
+    proc(slots, storage);
+
+    for (const slot of slots) {
+      let offset = 0;
+
+      for (const entry of slot.entries) {
+        const type = types[entry.type];
         const visualization = visualizeSlot(
-          entry.offset,
-          Math.min(32, sizeOccupied - j * 32),
-          slotSizeReserved,
+          offset,
+          entry.sizeFilled!,
+          slot.sizeFilled,
         );
 
         table.push([
-          { content: slot },
-          { content: entry.offset },
+          { content: slot.id },
+          { content: offset },
           { content: type.label },
           { content: entry.label },
           { content: visualization },
         ]);
+
+        offset += entry.sizeFilled!;
       }
     }
 
