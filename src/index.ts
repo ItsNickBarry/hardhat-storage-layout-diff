@@ -237,18 +237,12 @@ task(TASK_STORAGE_LAYOUT_CHECK)
     const storageB = await loadStorageLayout(hre, b, bRef);
     const data = mergeStorageLayouts(layout, storageB);
 
-    ejs.renderFile(
+    const contents = await ejs.renderFile(
       path.resolve(__dirname, 'template.html.ejs'),
       { data, titleA: source, titleB: b },
-      {},
-      function (err, result) {
-        if (err) {
-          console.log(err);
-        } else {
-          fs.writeFileSync('./out.html', result);
-        }
-      },
     );
+
+    await fs.promises.writeFile('./out.html', contents);
   });
 
 task(TASK_STORAGE_LAYOUT_COMPARE)
@@ -261,16 +255,10 @@ task(TASK_STORAGE_LAYOUT_COMPARE)
     const storageB = await loadStorageLayout(hre, b, bRef);
     const data = mergeStorageLayouts(storageA, storageB);
 
-    ejs.renderFile(
+    const contents = await ejs.renderFile(
       path.resolve(__dirname, 'template.html.ejs'),
       { data, titleA: a, titleB: b },
-      {},
-      function (err, result) {
-        if (err) {
-          console.log(err);
-        } else {
-          fs.writeFileSync('./out.html', result);
-        }
-      },
     );
+
+    await fs.promises.writeFile('./out.html', contents);
   });
