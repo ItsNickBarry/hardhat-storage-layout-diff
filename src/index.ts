@@ -1,4 +1,9 @@
 import pkg from '../package.json';
+import {
+  TASK_EXPORT_STORAGE_LAYOUT,
+  TASK_STORAGE_LAYOUT_CHECK,
+  TASK_STORAGE_LAYOUT_COMPARE,
+} from './task_names';
 import './type_extensions';
 import ejs from 'ejs';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
@@ -161,7 +166,7 @@ const mergeStorageLayouts = function (storageA: Storage, storageB: Storage) {
   return output;
 };
 
-task('export-storage-layout').setAction(async function (args, hre) {
+task(TASK_EXPORT_STORAGE_LAYOUT).setAction(async function (args, hre) {
   const config = hre.config.storageLayoutDiff;
 
   const outputDirectory = path.resolve(hre.config.paths.root, config.path);
@@ -218,7 +223,7 @@ task('export-storage-layout').setAction(async function (args, hre) {
   }
 });
 
-task('storage-layout-check')
+task(TASK_STORAGE_LAYOUT_CHECK)
   .addParam('source', 'Path to storage layout JSON')
   .addParam('b', 'Contract to check against storage layout')
   .addOptionalParam('bRef', 'Git reference where contract B is defined')
@@ -243,7 +248,7 @@ task('storage-layout-check')
     );
   });
 
-task('storage-layout-compare')
+task(TASK_STORAGE_LAYOUT_COMPARE)
   .addParam('a', 'First contract to diff')
   .addParam('b', 'Second contract to diff')
   .addOptionalParam('aRef', 'Git reference where contract A is defined')
