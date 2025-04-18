@@ -17,8 +17,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import simpleGit from 'simple-git';
 
-type StorageElement = any;
-type StorageLayout = { storage: StorageElement[]; types: any };
+// TODO: types may be incomplete
+type StorageElement = {
+  contract: string;
+  label: string;
+  offset: number;
+  slot: string;
+  type: string;
+};
+type StorageLayout = {
+  storage: StorageElement[];
+  types: {
+    [name: string]: { encoding: string; label: string; numberOfBytes: string };
+  };
+};
+
+type ParsedStorageElement = Partial<StorageElement & { size: number }> & {
+  bytesStart: number;
+  bytesEnd: number;
+};
 
 const DEFAULT_CONFIG: StorageLayoutDiffConfig = {
   path: './storage_layout',
@@ -90,7 +107,7 @@ const parseStorageLayout = function (storageLayout: StorageLayout) {
 
   return storage.reduce(function (acc, { label, offset, slot, type }) {
     const size = parseInt(types[type].numberOfBytes);
-    const bytesStart = parseInt(slot) * 32 + parseInt(offset);
+    const bytesStart = parseInt(slot) * 32 + offset;
     const bytesEnd = bytesStart + size - 1;
 
     if (acc.length > 0 && bytesStart > acc[acc.length - 1].bytesEnd + 1) {
@@ -105,7 +122,7 @@ const parseStorageLayout = function (storageLayout: StorageLayout) {
     acc.push({
       label,
       type: types[type].label,
-      slot: parseInt(slot),
+      slot,
       offset,
       size,
       bytesStart,
@@ -113,11 +130,14 @@ const parseStorageLayout = function (storageLayout: StorageLayout) {
     });
 
     return acc;
-  }, []);
+  }, [] as ParsedStorageElement[]);
 };
 
-const mergeStorageLayouts = function (storageA: Storage, storageB: Storage) {
-  const equal = function (a: StorageElement, b: StorageElement) {
+const mergeStorageLayouts = function (
+  storageA: ParsedStorageElement[],
+  storageB: ParsedStorageElement[],
+) {
+  const equal = function (a: ParsedStorageElement, b: ParsedStorageElement) {
     return (
       a.label == b.label &&
       a.type?.replace(/\[\d*\]/, '[]') == b.type?.replace(/\[\d*\]/, '[]')
@@ -130,15 +150,21 @@ const mergeStorageLayouts = function (storageA: Storage, storageB: Storage) {
 
   // ensure even byte lengths
 
-  const tail = {
+  storageA.push({
+    bytesStart: storageA[storageA.length - 1].bytesEnd + 1,
     bytesEnd: Math.max(
       storageA[storageA.length - 1].bytesEnd,
       storageB[storageB.length - 1].bytesEnd,
     ),
-  };
+  });
 
-  storageA.push(tail);
-  storageB.push(tail);
+  storageB.push({
+    bytesStart: storageB[storageB.length - 1].bytesEnd + 1,
+    bytesEnd: Math.max(
+      storageA[storageA.length - 1].bytesEnd,
+      storageB[storageB.length - 1].bytesEnd,
+    ),
+  });
 
   const output = [];
 
