@@ -351,28 +351,56 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
 
     for (let i = 0; i < storage.length; i++) {
       const entry = storage[i];
-      const size = parseInt(types[entry.type].numberOfBytes);
+      const type = types[entry.type];
 
-      let slotFill = 0;
+      const sizeReserved = Number(type.numberOfBytes);
 
-      for (let j = i; j < storage.length; j++) {
-        const nextEntry = storage[j];
+      // TODO: trim size in case of array that doesn't fill last slot
+      let sizeOccupied = sizeReserved;
 
-        if (nextEntry.slot !== entry.slot) break;
+      // determine how much of slot is reserved, looking ahead at next entry if necessary
 
-        slotFill =
-          nextEntry.offset + parseInt(types[nextEntry.type].numberOfBytes);
+      let slotSizeReserved;
+
+      if (type.encoding === 'dynamic_array') {
+        // a dynamic array slot stores the array length using 32 bytes
+        slotSizeReserved = 32;
+      } else if (type.encoding === 'mapping') {
+        // a mapping slot reserves 32 bytes, but writes no data
+        slotSizeReserved = 0;
+        sizeOccupied = 0;
+      } else {
+        // type encoding is 'inplace', and might not fill its slot
+        slotSizeReserved = Math.min(32, entry.offset + sizeReserved);
+
+        if (slotSizeReserved < 32) {
+          for (let j = i + 1; j < storage.length; j++) {
+            const nextEntry = storage[j];
+
+            if (nextEntry.slot !== entry.slot) break;
+
+            slotSizeReserved += Number(types[nextEntry.type].numberOfBytes);
+          }
+        }
       }
 
-      table.push([
-        { content: entry.slot },
-        { content: entry.offset },
-        { content: types[entry.type].label },
-        { content: entry.label },
-        {
-          content: visualizeSlot(entry.offset, size, slotFill),
-        },
-      ]);
+      for (let j = 0; j < Math.ceil(sizeReserved / 32); j++) {
+        const slot = (BigInt(entry.slot) + BigInt(j)).toString();
+
+        const visualization = visualizeSlot(
+          entry.offset,
+          Math.min(32, sizeOccupied - j * 32),
+          slotSizeReserved,
+        );
+
+        table.push([
+          { content: slot },
+          { content: entry.offset },
+          { content: type.label },
+          { content: entry.label },
+          { content: visualization },
+        ]);
+      }
     }
 
     console.log(table.toString());
