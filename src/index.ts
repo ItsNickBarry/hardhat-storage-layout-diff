@@ -360,7 +360,7 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
       table.push([
         { content: entry.slot },
         { content: entry.offset },
-        { content: entry.type.replace(/^t_/, '') },
+        { content: types[entry.type].label },
         { content: entry.label },
         {
           content: visualizeSlot(entry.offset, size, slotFill),
