@@ -39,13 +39,6 @@ export type ParsedStorageElement = Partial<
   bytesEnd: number;
 };
 
-type Entry = {
-  type: string;
-  label: string;
-  typeLabel?: string;
-  sizeFilled?: number;
-};
-
 type CollatedSlotEntry = {
   name: string;
   size: number;
@@ -223,8 +216,10 @@ export const collateStorageLayout = (
 ): CollatedSlot[] => {
   const { types, storage } = storageLayout;
 
-  const reducer = (slots: CollatedSlot[], entry: Entry) => {
-    const type = types[entry.type];
+  type Element = Pick<StorageElement, 'type' | 'label'>;
+
+  const reducer = (slots: CollatedSlot[], element: Element) => {
+    const type = types[element.type];
 
     let slot = slots[slots.length - 1];
 
@@ -234,21 +229,21 @@ export const collateStorageLayout = (
       slot = { id: 0n, sizeReserved: 0, sizeFilled: 0, entries: [] };
       slots.push(slot);
     } else if (Number(type.numberOfBytes) + slot.sizeReserved > 32) {
-      // create a new slot if current entry doesn't fit
+      // create a new slot if current element doesn't fit
       slot = { id: slot.id + 1n, sizeReserved: 0, sizeFilled: 0, entries: [] };
       slots.push(slot);
     }
 
     if (type.encoding === 'inplace' && (type.members || type.base)) {
       // type is either a struct or a fixed array
-      const members: Entry[] = [];
+      const members: Element[] = [];
 
       if (type.members) {
         // type is a struct
         for (let i = 0; i < type.members.length; i++) {
           members.push({
             type: type.members[i].type,
-            label: `${entry.label}.${type.members[i].label}`,
+            label: `${element.label}.${type.members[i].label}`,
           });
         }
       } else if (type.base) {
@@ -256,7 +251,7 @@ export const collateStorageLayout = (
         const [, count] = type.label.match(/.+\[(\d+)\]$/)!;
 
         for (let i = 0; i < Number(count); i++) {
-          members.push({ type: type.base, label: `${entry.label}[${i}]` });
+          members.push({ type: type.base, label: `${element.label}[${i}]` });
         }
       }
 
@@ -279,7 +274,7 @@ export const collateStorageLayout = (
       slot.sizeFilled += sizeFilled;
 
       slot.entries.push({
-        name: entry.label,
+        name: element.label,
         size: sizeFilled,
         type,
       });
