@@ -40,6 +40,7 @@ export type ParsedStorageElement = Partial<
 type Entry = {
   type: string;
   label: string;
+  typeLabel?: string;
   sizeFilled?: number;
 };
 
@@ -241,6 +242,7 @@ export const collateSlotEntries = (
       slot.entries.push({
         type: entry.type,
         label: entry.label,
+        typeLabel: type.label,
         sizeFilled,
       });
     } else if (type.encoding === 'dynamic_array') {
@@ -254,13 +256,13 @@ export const collateSlotEntries = (
       slot.entries.push({
         type: entry.type,
         label: entry.label,
+        typeLabel: type.label,
         sizeFilled,
       });
     } else {
       // type encoding is 'inplace', and might not fill its slot
       if (type.members) {
         // type is a struct
-
         const members: Entry[] = type.members.map((m) => ({
           type: m.type,
           label: `${entry.label}.${m.label}`,
@@ -273,7 +275,6 @@ export const collateSlotEntries = (
         slots[slots.length - 1].sizeReserved = 32;
       } else if (type.base) {
         // type is a fixed array
-
         const [, count] = type.label.match(/.+\[(\d+)\]$/)!;
 
         const members: Entry[] = [];
@@ -298,6 +299,7 @@ export const collateSlotEntries = (
         slot.entries.push({
           type: entry.type,
           label: entry.label,
+          typeLabel: type.label,
           sizeFilled,
         });
       }

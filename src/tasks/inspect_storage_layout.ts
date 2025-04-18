@@ -15,6 +15,8 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
 
     const { storage, types } = await getStorageLayout(hre, args.contract);
 
+    const slots = collateSlotEntries(types, storage);
+
     const table = new Table({
       style: { head: [], border: [], 'padding-left': 2, 'padding-right': 2 },
       chars: {
@@ -43,13 +45,10 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
       { content: 'visualization (right to left)' },
     ]);
 
-    const slots = collateSlotEntries(types, storage);
-
     for (const slot of slots) {
       let offset = 0;
 
       for (const entry of slot.entries) {
-        const type = types[entry.type];
         const visualization = visualizeSlot(
           offset,
           entry.sizeFilled!,
@@ -59,7 +58,7 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
         table.push([
           { content: slot.id },
           { content: offset },
-          { content: type.label },
+          { content: entry.typeLabel! },
           { content: entry.label },
           { content: visualization },
         ]);
