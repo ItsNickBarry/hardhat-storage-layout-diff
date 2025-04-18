@@ -51,19 +51,19 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
       for (const entry of slot.entries) {
         const visualization = visualizeSlot(
           offset,
-          entry.sizeFilled!,
+          entry.size,
           slot.sizeFilled,
         );
 
         table.push([
           { content: slot.id },
           { content: offset },
-          { content: entry.typeLabel! },
-          { content: entry.label },
+          { content: entry.type.label },
+          { content: entry.name },
           { content: visualization },
         ]);
 
-        offset += entry.sizeFilled!;
+        offset += entry.size;
       }
     }
 

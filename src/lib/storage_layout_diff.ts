@@ -46,11 +46,17 @@ type Entry = {
   sizeFilled?: number;
 };
 
-type Slot = {
+type CollatedSlotEntry = {
+  name: string;
+  size: number;
+  type: StorageType;
+};
+
+type CollatedSlot = {
   id: bigint;
   sizeReserved: number;
   sizeFilled: number;
-  entries: Entry[];
+  entries: CollatedSlotEntry[];
 };
 
 export const visualizeSlot = (
@@ -212,10 +218,12 @@ export const mergeStorageLayouts = function (
   return output;
 };
 
-export const collateStorageLayout = (storageLayout: StorageLayout): Slot[] => {
+export const collateStorageLayout = (
+  storageLayout: StorageLayout,
+): CollatedSlot[] => {
   const { types, storage } = storageLayout;
 
-  const reducer = (slots: Slot[], entry: Entry) => {
+  const reducer = (slots: CollatedSlot[], entry: Entry) => {
     const type = types[entry.type];
 
     let slot = slots[slots.length - 1];
@@ -271,10 +279,9 @@ export const collateStorageLayout = (storageLayout: StorageLayout): Slot[] => {
       slot.sizeFilled += sizeFilled;
 
       slot.entries.push({
-        type: entry.type,
-        label: entry.label,
-        typeLabel: type.label,
-        sizeFilled,
+        name: entry.label,
+        size: sizeFilled,
+        type,
       });
     }
 
