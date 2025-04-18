@@ -214,29 +214,19 @@ export const collateSlotEntries = (
   types: StorageLayoutTypes,
   storage: Entry[],
 ) => {
-  const slots: Slot[] = [
-    { id: 0n, sizeReserved: 0, sizeFilled: 0, entries: [] },
-  ];
-
-  const proc = (slots: Slot[], entries: Entry[], index = 0) => {
-    let slot = slots[slots.length - 1];
-
-    const entry = entries[index];
-    if (!entry) return;
+  const reducer = (slots: Slot[], entry: Entry) => {
     const type = types[entry.type];
 
-    // create a new slot if current entry requires it
+    let slot = slots[slots.length - 1];
 
-    if (
-      slot.entries.length !== 0 &&
-      32 - slot.sizeReserved < Number(type.numberOfBytes)
-    ) {
-      slot = {
-        id: slot.id + 1n,
-        sizeReserved: 0,
-        sizeFilled: 0,
-        entries: [],
-      };
+    if (!slot) {
+      // create a new slot if none exist
+      // TODO: custom layout feature allows first slot to be > 0
+      slot = { id: 0n, sizeReserved: 0, sizeFilled: 0, entries: [] };
+      slots.push(slot);
+    } else if (Number(type.numberOfBytes) + slot.sizeReserved > 32) {
+      // create a new slot if current entry doesn't fit
+      slot = { id: slot.id + 1n, sizeReserved: 0, sizeFilled: 0, entries: [] };
       slots.push(slot);
     }
 
@@ -276,7 +266,7 @@ export const collateSlotEntries = (
           label: `${entry.label}.${m.label}`,
         }));
 
-        proc(slots, members);
+        members.reduce(reducer, slots);
 
         // struct reserves the entirety of its final slot
         // retrieve the slot from the array in case a new one was added during the recursive call
@@ -292,7 +282,7 @@ export const collateSlotEntries = (
           members.push({ type: type.base, label: `${entry.label}[${i}]` });
         }
 
-        proc(slots, members);
+        members.reduce(reducer, slots);
 
         // array reserves the entirety of its final slot
         // retrieve the slot from the array in case a new one was added during the recursive call
@@ -313,10 +303,8 @@ export const collateSlotEntries = (
       }
     }
 
-    proc(slots, entries, index + 1);
+    return slots;
   };
 
-  proc(slots, storage);
-
-  return slots;
+  return storage.reduce(reducer, []);
 };
