@@ -5,6 +5,7 @@ import {
   TASK_STORAGE_LAYOUT_COMPARE,
 } from './task_names';
 import './type_extensions';
+import type { StorageLayoutDiffConfig } from './types';
 import ejs from 'ejs';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { extendConfig } from 'hardhat/config';
@@ -20,16 +21,19 @@ type StorageElement = any;
 type Storage = StorageElement[];
 type StorageLayout = { storage: Storage; types: any };
 
+const DEFAULT_CONFIG: StorageLayoutDiffConfig = {
+  path: './storage_layout',
+  clear: false,
+  flat: false,
+  only: [],
+  except: [],
+  spacing: 2,
+};
+
 extendConfig(function (config, userConfig) {
   config.storageLayoutDiff = Object.assign(
-    {
-      path: './storage_layout',
-      clear: false,
-      flat: false,
-      only: [],
-      except: [],
-      spacing: 2,
-    },
+    {},
+    DEFAULT_CONFIG,
     userConfig.storageLayoutDiff,
   );
 
