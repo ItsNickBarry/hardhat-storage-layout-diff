@@ -30,7 +30,12 @@ type StorageElement = {
 type StorageLayout = {
   storage: StorageElement[];
   types: {
-    [name: string]: { encoding: string; label: string; numberOfBytes: string };
+    [name: string]: {
+      encoding: 'inplace' | 'mapping' | 'dynamic_array';
+      label: string;
+      numberOfBytes: string;
+      base?: string;
+    };
   };
 };
 
