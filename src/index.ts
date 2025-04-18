@@ -317,6 +317,8 @@ task(TASK_STORAGE_LAYOUT_COMPARE)
 task(TASK_INSPECT_STORAGE_LAYOUT)
   .addPositionalParam('contract', 'Contract whose storage layout to inspect')
   .setAction(async (args, hre) => {
+    await hre.run('compile');
+
     const { storage, types } = await getStorageLayout(hre, args.contract);
 
     const table = new Table({
