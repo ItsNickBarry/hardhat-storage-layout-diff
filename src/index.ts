@@ -18,8 +18,7 @@ import path from 'node:path';
 import simpleGit from 'simple-git';
 
 type StorageElement = any;
-type Storage = StorageElement[];
-type StorageLayout = { storage: Storage; types: any };
+type StorageLayout = { storage: StorageElement[]; types: any };
 
 const DEFAULT_CONFIG: StorageLayoutDiffConfig = {
   path: './storage_layout',
