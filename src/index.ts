@@ -1,22 +1,55 @@
-const fs = require('fs');
-const path = require('path');
-const ejs = require('ejs');
-const simpleGit = require('simple-git');
-const { parseFullyQualifiedName } = require('hardhat/utils/contract-names');
-const { extendConfig } = require('hardhat/config');
+import pkg from '../package.json';
+import {
+  TASK_EXPORT_STORAGE_LAYOUT,
+  TASK_STORAGE_LAYOUT_CHECK,
+  TASK_STORAGE_LAYOUT_COMPARE,
+} from './task_names';
+import './type_extensions';
+import type { StorageLayoutDiffConfig } from './types';
+import ejs from 'ejs';
+import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
+import { extendConfig } from 'hardhat/config';
+import { task } from 'hardhat/config';
+import { HardhatPluginError } from 'hardhat/plugins';
+import type { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
+import fs from 'node:fs';
+import path from 'node:path';
+import simpleGit from 'simple-git';
 
-const { TASK_COMPILE } = require('hardhat/builtin-tasks/task-names');
+// TODO: types may be incomplete
+type StorageElement = {
+  contract: string;
+  label: string;
+  offset: number;
+  slot: string;
+  type: string;
+};
+type StorageLayout = {
+  storage: StorageElement[];
+  types: {
+    [name: string]: { encoding: string; label: string; numberOfBytes: string };
+  };
+};
+
+type ParsedStorageElement = Partial<StorageElement & { size: number }> & {
+  bytesStart: number;
+  bytesEnd: number;
+};
+
+const DEFAULT_CONFIG: StorageLayoutDiffConfig = {
+  path: './storage_layout',
+  clear: false,
+  flat: false,
+  only: [],
+  except: [],
+  spacing: 2,
+};
 
 extendConfig(function (config, userConfig) {
   config.storageLayoutDiff = Object.assign(
-    {
-      path: './storage_layout',
-      clear: false,
-      flat: false,
-      only: [],
-      except: [],
-      spacing: 2,
-    },
+    {},
+    DEFAULT_CONFIG,
     userConfig.storageLayoutDiff,
   );
 
@@ -29,30 +62,52 @@ extendConfig(function (config, userConfig) {
   }
 });
 
-const loadStorageLayout = async function (fullName, ref) {
+const getStorageLayout = async (
+  hre: HardhatRuntimeEnvironment,
+  fullName: string,
+) => {
+  const info = await hre.artifacts.getBuildInfo(fullName);
+
+  if (!info) {
+    throw new HardhatPluginError(pkg.name, `contract not found at ref`);
+  }
+
+  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
+
+  return (info.output.contracts[sourceName][contractName] as any)
+    .storageLayout as StorageLayout;
+};
+
+const loadStorageLayout = async function (
+  hre: HardhatRuntimeEnvironment,
+  fullName: string,
+  ref: string,
+) {
   const repository = simpleGit();
   await repository.init();
   const { latest } = await repository.log();
 
   // TODO: error if ref === 'HEAD'
 
+  if (!latest) {
+    throw new HardhatPluginError(pkg.name, 'ref error');
+  }
+
   await repository.checkout(ref || latest.hash);
   await hre.run(TASK_COMPILE);
-
-  const info = await hre.artifacts.getBuildInfo(fullName);
-  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
-
   await repository.checkout('-');
 
-  return parseStorageLayout(
-    info.output.contracts[sourceName][contractName].storageLayout,
-  );
+  const storageLayout = await getStorageLayout(hre, fullName);
+
+  return parseStorageLayout(storageLayout);
 };
 
-const parseStorageLayout = function ({ storage, types }) {
+const parseStorageLayout = function (storageLayout: StorageLayout) {
+  const { storage, types } = storageLayout;
+
   return storage.reduce(function (acc, { label, offset, slot, type }) {
     const size = parseInt(types[type].numberOfBytes);
-    const bytesStart = parseInt(slot) * 32 + parseInt(offset);
+    const bytesStart = parseInt(slot) * 32 + offset;
     const bytesEnd = bytesStart + size - 1;
 
     if (acc.length > 0 && bytesStart > acc[acc.length - 1].bytesEnd + 1) {
@@ -67,7 +122,7 @@ const parseStorageLayout = function ({ storage, types }) {
     acc.push({
       label,
       type: types[type].label,
-      slot: parseInt(slot),
+      slot,
       offset,
       size,
       bytesStart,
@@ -75,11 +130,14 @@ const parseStorageLayout = function ({ storage, types }) {
     });
 
     return acc;
-  }, []);
+  }, [] as ParsedStorageElement[]);
 };
 
-const mergeStorageLayouts = function (storageA, storageB) {
-  const equal = function (a, b) {
+const mergeStorageLayouts = function (
+  storageA: ParsedStorageElement[],
+  storageB: ParsedStorageElement[],
+) {
+  const equal = function (a: ParsedStorageElement, b: ParsedStorageElement) {
     return (
       a.label == b.label &&
       a.type?.replace(/\[\d*\]/, '[]') == b.type?.replace(/\[\d*\]/, '[]')
@@ -92,15 +150,21 @@ const mergeStorageLayouts = function (storageA, storageB) {
 
   // ensure even byte lengths
 
-  const tail = {
+  storageA.push({
+    bytesStart: storageA[storageA.length - 1].bytesEnd + 1,
     bytesEnd: Math.max(
       storageA[storageA.length - 1].bytesEnd,
       storageB[storageB.length - 1].bytesEnd,
     ),
-  };
+  });
 
-  storageA.push(tail);
-  storageB.push(tail);
+  storageB.push({
+    bytesStart: storageB[storageB.length - 1].bytesEnd + 1,
+    bytesEnd: Math.max(
+      storageA[storageA.length - 1].bytesEnd,
+      storageB[storageB.length - 1].bytesEnd,
+    ),
+  });
 
   const output = [];
 
@@ -136,19 +200,23 @@ const mergeStorageLayouts = function (storageA, storageB) {
   return output;
 };
 
-task('export-storage-layout').setAction(async function (args, hre) {
+task(TASK_EXPORT_STORAGE_LAYOUT).setAction(async function (args, hre) {
   const config = hre.config.storageLayoutDiff;
 
   const outputDirectory = path.resolve(hre.config.paths.root, config.path);
 
   if (!outputDirectory.startsWith(hre.config.paths.root)) {
     throw new HardhatPluginError(
+      pkg.name,
       'resolved path must be inside of project directory',
     );
   }
 
   if (outputDirectory === hre.config.paths.root) {
-    throw new HardhatPluginError('resolved path must not be root directory');
+    throw new HardhatPluginError(
+      pkg.name,
+      'resolved path must not be root directory',
+    );
   }
 
   if (config.clear && fs.existsSync(outputDirectory)) {
@@ -165,10 +233,8 @@ task('export-storage-layout').setAction(async function (args, hre) {
     if (config.except.length && config.except.some((m) => fullName.match(m)))
       continue;
 
-    const info = await hre.artifacts.getBuildInfo(fullName);
-    const { sourceName, contractName } = parseFullyQualifiedName(fullName);
-    const { storage, types } =
-      info.output.contracts[sourceName][contractName].storageLayout;
+    const storageLayout = await getStorageLayout(hre, fullName);
+    const { storage, types } = storageLayout;
 
     if (!storage.length) continue;
 
@@ -182,54 +248,43 @@ task('export-storage-layout').setAction(async function (args, hre) {
     fs.writeFileSync(
       destination,
       `${JSON.stringify({ storage, types }, null, config.spacing)}\n`,
-      { flag: 'w' },
     );
   }
 });
 
-task('storage-layout-check')
+task(TASK_STORAGE_LAYOUT_CHECK)
   .addParam('source', 'Path to storage layout JSON')
   .addParam('b', 'Contract to check against storage layout')
   .addOptionalParam('bRef', 'Git reference where contract B is defined')
-  .setAction(async function ({ source, b, bRef }) {
-    const layout = parseStorageLayout(JSON.parse(fs.readFileSync(source)));
-    const storageB = await loadStorageLayout(b, bRef);
+  .setAction(async function ({ source, b, bRef }, hre) {
+    const layout = parseStorageLayout(
+      JSON.parse(fs.readFileSync(source, 'utf-8')),
+    );
+    const storageB = await loadStorageLayout(hre, b, bRef);
     const data = mergeStorageLayouts(layout, storageB);
 
-    ejs.renderFile(
+    const contents = await ejs.renderFile(
       path.resolve(__dirname, 'template.html.ejs'),
       { data, titleA: source, titleB: b },
-      {},
-      function (err, result) {
-        if (err) {
-          console.log(err);
-        } else {
-          fs.writeFileSync('./out.html', result);
-        }
-      },
     );
+
+    await fs.promises.writeFile('./out.html', contents);
   });
 
-task('storage-layout-compare')
+task(TASK_STORAGE_LAYOUT_COMPARE)
   .addParam('a', 'First contract to diff')
   .addParam('b', 'Second contract to diff')
   .addOptionalParam('aRef', 'Git reference where contract A is defined')
   .addOptionalParam('bRef', 'Git reference where contract B is defined')
   .setAction(async function ({ a, b, aRef, bRef }, hre) {
-    const storageA = await loadStorageLayout(a, aRef);
-    const storageB = await loadStorageLayout(b, bRef);
+    const storageA = await loadStorageLayout(hre, a, aRef);
+    const storageB = await loadStorageLayout(hre, b, bRef);
     const data = mergeStorageLayouts(storageA, storageB);
 
-    ejs.renderFile(
+    const contents = await ejs.renderFile(
       path.resolve(__dirname, 'template.html.ejs'),
       { data, titleA: a, titleB: b },
-      {},
-      function (err, result) {
-        if (err) {
-          console.log(err);
-        } else {
-          fs.writeFileSync('./out.html', result);
-        }
-      },
     );
+
+    await fs.promises.writeFile('./out.html', contents);
   });
