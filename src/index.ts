@@ -64,6 +64,18 @@ extendConfig(function (config, userConfig) {
   }
 });
 
+const visualizeSlot = (offset: number, size: number, slotFill: number) => {
+  const filled = '▰';
+  const empty = '▱';
+
+  return (
+    ' '.repeat(32 - slotFill) +
+    empty.repeat(slotFill - size - offset) +
+    filled.repeat(size) +
+    empty.repeat(offset)
+  );
+};
+
 const getStorageLayout = async (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
@@ -330,9 +342,6 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
       { content: 'visualization (right to left)' },
     ]);
 
-    const filled = '▰';
-    const empty = '▱';
-
     for (let i = 0; i < storage.length; i++) {
       const entry = storage[i];
       const size = parseInt(types[entry.type].numberOfBytes);
@@ -354,11 +363,7 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
         { content: entry.type },
         { content: entry.label },
         {
-          content:
-            ' '.repeat(32 - slotFill) +
-            empty.repeat(slotFill - size - entry.offset) +
-            filled.repeat(size) +
-            empty.repeat(entry.offset),
+          content: visualizeSlot(entry.offset, size, slotFill),
         },
       ]);
     }
