@@ -4,9 +4,9 @@ import {
   TASK_INSPECT_STORAGE_LAYOUT,
   TASK_STORAGE_LAYOUT_CHECK,
   TASK_STORAGE_LAYOUT_COMPARE,
-} from './task_names';
+} from './task_names.js';
 import './type_extensions';
-import type { StorageLayoutDiffConfig } from './types';
+import type { StorageLayoutDiffConfig } from './types.js';
 import Table from 'cli-table3';
 import ejs from 'ejs';
 import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
@@ -14,6 +14,7 @@ import { extendConfig } from 'hardhat/config';
 import { task } from 'hardhat/config';
 import { HardhatPluginError } from 'hardhat/plugins';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
+import type { HardhatPlugin } from 'hardhat/types/plugins';
 import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -496,3 +497,10 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
 
     console.log(table.toString());
   });
+
+const plugin: HardhatPlugin = {
+  id: pkg.name,
+  npmPackage: pkg.name,
+};
+
+export default plugin;

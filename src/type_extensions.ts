@@ -1,7 +1,7 @@
 import type {
   StorageLayoutDiffConfig,
   StorageLayoutDiffUserConfig,
-} from './types';
+} from './types.js';
 import 'hardhat/types/config';
 
 declare module 'hardhat/types/config' {
