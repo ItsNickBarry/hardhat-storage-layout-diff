@@ -20,6 +20,15 @@ import path from 'node:path';
 import simpleGit from 'simple-git';
 
 // TODO: types may be incomplete
+
+type StorageType = {
+  encoding: 'inplace' | 'mapping' | 'dynamic_array';
+  label: string;
+  numberOfBytes: string;
+  base?: string;
+  members?: StorageElement[];
+};
+
 type StorageElement = {
   contract: string;
   label: string;
@@ -27,15 +36,11 @@ type StorageElement = {
   slot: string;
   type: string;
 };
+
 type StorageLayout = {
   storage: StorageElement[];
   types: {
-    [name: string]: {
-      encoding: 'inplace' | 'mapping' | 'dynamic_array';
-      label: string;
-      numberOfBytes: string;
-      base?: string;
-    };
+    [name: string]: StorageType;
   };
 };
 
