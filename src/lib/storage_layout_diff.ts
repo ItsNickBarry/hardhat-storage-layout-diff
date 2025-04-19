@@ -294,11 +294,11 @@ export const printCollatedSlots = (slots: CollatedSlot[]) => {
   });
 
   table.push([
-    { content: 'slot' },
-    { content: 'offset' },
-    { content: 'type' },
-    { content: 'name' },
-    { content: 'visualization (right to left)' },
+    { content: chalk.bold('Slot') },
+    { content: chalk.bold('Offset') },
+    { content: chalk.bold('Type') },
+    { content: chalk.bold('Name') },
+    { content: chalk.bold('Visualization') },
   ]);
 
   for (const slot of slots) {
@@ -344,11 +344,11 @@ export const printMergedCollatedSlots = (slots: MergedCollatedSlot[]) => {
   });
 
   table.push([
-    { content: 'slot' },
-    { content: 'offset' },
-    { content: 'type' },
-    { content: 'name' },
-    // { content: 'visualization (right to left)' },
+    { content: chalk.bold('Slot') },
+    { content: chalk.bold('Offset') },
+    { content: chalk.bold('Type') },
+    { content: chalk.bold('Name') },
+    { content: chalk.bold('Visualization') },
   ]);
 
   for (const slot of slots) {
