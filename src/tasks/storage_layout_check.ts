@@ -1,12 +1,5 @@
-import {
-  collateStorageLayout,
-  getCollatedStorageLayout,
-  mergeCollatedSlots,
-  printMergedCollatedSlots,
-} from '../lib/storage_layout_diff.js';
 import { TASK_STORAGE_LAYOUT_CHECK } from '../task_names.js';
 import { task } from 'hardhat/config';
-import fs from 'node:fs';
 
 export default task(TASK_STORAGE_LAYOUT_CHECK)
   .addPositionalArgument({
@@ -22,13 +15,5 @@ export default task(TASK_STORAGE_LAYOUT_CHECK)
     description: 'Git reference where contract B is defined',
     defaultValue: '',
   })
-  .setAction(async (args, hre) => {
-    const slotsA = collateStorageLayout(
-      JSON.parse(fs.readFileSync(args.source, 'utf-8')),
-    );
-    const slotsB = await getCollatedStorageLayout(hre, args.b, args.bRef);
-    const data = mergeCollatedSlots(slotsA, slotsB);
-
-    printMergedCollatedSlots(data);
-  })
+  .setAction(import.meta.resolve('../actions/storage_layout_check.ts'))
   .build();
