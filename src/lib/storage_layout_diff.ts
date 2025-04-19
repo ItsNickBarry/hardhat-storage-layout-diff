@@ -3,6 +3,7 @@ import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { HardhatPluginError } from 'hardhat/plugins';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
+import assert from 'node:assert';
 import simpleGit from 'simple-git';
 
 export type StorageElement = {
@@ -53,19 +54,42 @@ type CollatedSlot = {
   entries: CollatedSlotEntry[];
 };
 
+type MergedCollatedSlotEntry = {
+  nameA: string;
+  nameB: string;
+  sizeA: number;
+  sizeB: number;
+  offsetA: number;
+  offsetB: number;
+  typeA: StorageType;
+  typeB: StorageType;
+};
+
+type MergedCollatedSlot = {
+  id: bigint;
+  sizeReservedA: number;
+  sizeReservedB: number;
+  sizeFilledA: number;
+  sizeFilledB: number;
+  entries: MergedCollatedSlotEntry[];
+};
+
 export const visualizeSlot = (
   offset: number,
   size: number,
   slotFill: number,
 ) => {
-  const filled = '▰';
-  const empty = '▱';
+  const chars = {
+    filled: '▰',
+    placeholder: '▱',
+    empty: ' ',
+  };
 
   return (
-    ' '.repeat(32 - slotFill) +
-    empty.repeat(slotFill - size - offset) +
-    filled.repeat(size) +
-    empty.repeat(offset)
+    chars.empty.repeat(32 - slotFill) +
+    chars.placeholder.repeat(slotFill - size - offset) +
+    chars.filled.repeat(size) +
+    chars.placeholder.repeat(offset)
   );
 };
 
@@ -286,4 +310,68 @@ export const collateStorageLayout = (
   };
 
   return storage.reduce(reducer, []);
+};
+
+export const mergeCollatedSlots = (
+  slotsA: CollatedSlot[],
+  slotsB: CollatedSlot[],
+): MergedCollatedSlot[] => {
+  // TODO: support starting from slot > 0
+  // TODO: must use bigint or string for custom layouts
+
+  // TODO: support different lengths
+  assert.equal(slotsA.length, slotsB.length);
+
+  const output: MergedCollatedSlot[] = [];
+
+  for (let i = 0; i < slotsA.length; i++) {
+    const slotA = slotsA[i];
+    const slotB = slotsB[i];
+
+    assert.equal(slotA.id, slotB.id);
+
+    const mergedEntries: MergedCollatedSlotEntry[] = [];
+
+    let entryIndexA = 0;
+    let entryIndexB = 0;
+    let entryA;
+    let entryB;
+
+    while (
+      (entryA = slotA.entries[entryIndexA]) &&
+      (entryB = slotB.entries[entryIndexB])
+    ) {
+      const mergedEntry: MergedCollatedSlotEntry = {
+        nameA: entryA.name,
+        nameB: entryB.name,
+        sizeA: entryA.size,
+        sizeB: entryB.size,
+        offsetA: entryA.offset,
+        offsetB: entryB.offset,
+        typeA: entryA.type,
+        typeB: entryB.type,
+      };
+
+      mergedEntries.push(mergedEntry);
+
+      const endA = entryA.size + entryA.offset;
+      const endB = entryB.size + entryB.offset;
+
+      if (endA <= endB) entryIndexA++;
+      if (endB <= endA) entryIndexB++;
+    }
+
+    // TODO: add tail entries
+
+    output.push({
+      id: slotA.id,
+      sizeReservedA: slotA.sizeReserved,
+      sizeReservedB: slotB.sizeReserved,
+      sizeFilledA: slotA.sizeFilled,
+      sizeFilledB: slotB.sizeFilled,
+      entries: mergedEntries,
+    });
+  }
+
+  return output;
 };

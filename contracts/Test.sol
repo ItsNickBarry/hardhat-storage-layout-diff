@@ -21,3 +21,18 @@ contract Test {
     bool b1;
     bool[4][2] bools;
 }
+
+contract Test2 {
+    bytes29 _b;
+    uint128 a;
+    uint64 b;
+    uint128 u;
+}
+
+contract Test3 {
+    bytes30 _b;
+    uint64 a;
+    uint128 b;
+    uint128 u;
+    uint64 uu;
+}

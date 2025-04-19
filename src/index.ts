@@ -1,3 +1,4 @@
+import './tasks/diff_storage_layout';
 import './tasks/export_storage_layout';
 import './tasks/inspect_storage_layout';
 import './tasks/storage_layout_check';
