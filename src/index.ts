@@ -2,7 +2,6 @@ import './tasks/diff_storage_layout';
 import './tasks/export_storage_layout';
 import './tasks/inspect_storage_layout';
 import './tasks/storage_layout_check';
-import './tasks/storage_layout_compare';
 import './type_extensions';
 import type { StorageLayoutDiffConfig } from './types';
 import { extendConfig } from 'hardhat/config';

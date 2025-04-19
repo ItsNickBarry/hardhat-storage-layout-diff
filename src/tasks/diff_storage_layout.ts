@@ -1,6 +1,5 @@
 import {
-  getStorageLayout,
-  collateStorageLayout,
+  loadStorageLayout,
   mergeCollatedSlots,
   printMergedCollatedSlots,
 } from '../lib/storage_layout_diff';
@@ -11,13 +10,13 @@ import { task } from 'hardhat/config';
 task(TASK_DIFF_STORAGE_LAYOUT)
   .addPositionalParam('a', 'First contract whose storage layout to inspect')
   .addPositionalParam('b', 'Second contract whose storage layout to inspect')
+  .addOptionalParam('aRef', 'Git reference where contract A is defined')
+  .addOptionalParam('bRef', 'Git reference where contract B is defined')
   .setAction(async (args, hre) => {
     await hre.run(TASK_COMPILE);
 
-    const storageLayoutA = await getStorageLayout(hre, args.a);
-    const slotsA = collateStorageLayout(storageLayoutA);
-    const storageLayoutB = await getStorageLayout(hre, args.b);
-    const slotsB = collateStorageLayout(storageLayoutB);
+    const slotsA = await loadStorageLayout(hre, args.a, args.aRef);
+    const slotsB = await loadStorageLayout(hre, args.b, args.bRef);
 
     const slots = mergeCollatedSlots(slotsA, slotsB);
 
