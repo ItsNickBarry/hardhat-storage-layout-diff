@@ -1,8 +1,9 @@
-import './src/index';
+import HardhatStorageLayoutDiff from './src/index.js';
 import { HardhatUserConfig } from 'hardhat/config';
 
 const config: HardhatUserConfig = {
   solidity: '0.8.28',
+  plugins: [HardhatStorageLayoutDiff],
 };
 
 export default config;
