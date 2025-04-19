@@ -1,6 +1,5 @@
 import {
-  collateStorageLayout,
-  getStorageLayout,
+  getCollatedStorageLayout,
   printCollatedSlots,
 } from '../lib/storage_layout_diff';
 import { TASK_INSPECT_STORAGE_LAYOUT } from '../task_names';
@@ -12,9 +11,7 @@ task(TASK_INSPECT_STORAGE_LAYOUT)
   .setAction(async (args, hre) => {
     await hre.run(TASK_COMPILE);
 
-    const storageLayout = await getStorageLayout(hre, args.contract);
-
-    const slots = collateStorageLayout(storageLayout);
+    const slots = await getCollatedStorageLayout(hre, args.contract);
 
     printCollatedSlots(slots);
   });

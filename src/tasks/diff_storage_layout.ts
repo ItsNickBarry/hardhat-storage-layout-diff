@@ -1,5 +1,5 @@
 import {
-  loadStorageLayout,
+  getCollatedStorageLayout,
   mergeCollatedSlots,
   printMergedCollatedSlots,
 } from '../lib/storage_layout_diff';
@@ -15,8 +15,8 @@ task(TASK_DIFF_STORAGE_LAYOUT)
   .setAction(async (args, hre) => {
     await hre.run(TASK_COMPILE);
 
-    const slotsA = await loadStorageLayout(hre, args.a, args.aRef);
-    const slotsB = await loadStorageLayout(hre, args.b, args.bRef);
+    const slotsA = await getCollatedStorageLayout(hre, args.a, args.aRef);
+    const slotsB = await getCollatedStorageLayout(hre, args.b, args.bRef);
 
     const slots = mergeCollatedSlots(slotsA, slotsB);
 

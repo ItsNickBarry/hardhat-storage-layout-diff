@@ -1,6 +1,6 @@
 import {
   collateStorageLayout,
-  loadStorageLayout,
+  getCollatedStorageLayout,
   mergeCollatedSlots,
   printMergedCollatedSlots,
 } from '../lib/storage_layout_diff';
@@ -16,7 +16,7 @@ task(TASK_STORAGE_LAYOUT_CHECK)
     const slotsA = collateStorageLayout(
       JSON.parse(fs.readFileSync(source, 'utf-8')),
     );
-    const slotsB = await loadStorageLayout(hre, b, bRef);
+    const slotsB = await getCollatedStorageLayout(hre, b, bRef);
     const data = mergeCollatedSlots(slotsA, slotsB);
 
     printMergedCollatedSlots(data);

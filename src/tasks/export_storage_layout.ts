@@ -1,5 +1,5 @@
 import pkg from '../../package.json';
-import { getStorageLayout } from '../lib/storage_layout_diff';
+import { getRawStorageLayout } from '../lib/storage_layout_diff';
 import { TASK_EXPORT_STORAGE_LAYOUT } from '../task_names';
 import { task } from 'hardhat/config';
 import { HardhatPluginError } from 'hardhat/plugins';
@@ -39,7 +39,7 @@ task(TASK_EXPORT_STORAGE_LAYOUT).setAction(async function (args, hre) {
     if (config.except.length && config.except.some((m) => fullName.match(m)))
       continue;
 
-    const storageLayout = await getStorageLayout(hre, fullName);
+    const storageLayout = await getRawStorageLayout(hre, fullName);
     const { storage, types } = storageLayout;
 
     if (!storage.length) continue;

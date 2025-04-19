@@ -95,7 +95,7 @@ export const visualizeSlot = (
   );
 };
 
-export const getStorageLayout = async (
+export const getRawStorageLayout = async (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
 ): Promise<StorageLayout> => {
@@ -110,7 +110,7 @@ export const getStorageLayout = async (
   return (info.output.contracts[sourceName][contractName] as any).storageLayout;
 };
 
-export const loadStorageLayout = async function (
+export const getCollatedStorageLayout = async function (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
   ref?: string,
@@ -124,7 +124,7 @@ export const loadStorageLayout = async function (
 
     try {
       await hre.run(TASK_COMPILE);
-      storageLayout = await getStorageLayout(hre, fullName);
+      storageLayout = await getRawStorageLayout(hre, fullName);
     } catch (error) {
       throw error;
     } finally {
@@ -134,7 +134,7 @@ export const loadStorageLayout = async function (
     }
   }
 
-  storageLayout = await getStorageLayout(hre, fullName);
+  storageLayout = await getRawStorageLayout(hre, fullName);
 
   return collateStorageLayout(storageLayout);
 };
