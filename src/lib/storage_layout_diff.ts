@@ -115,6 +115,8 @@ export const loadStorageLayout = async function (
   fullName: string,
   ref?: string,
 ) {
+  let storageLayout: StorageLayout;
+
   if (ref) {
     const repository = simpleGit();
     await repository.init();
@@ -122,16 +124,17 @@ export const loadStorageLayout = async function (
 
     try {
       await hre.run(TASK_COMPILE);
+      storageLayout = await getStorageLayout(hre, fullName);
     } catch (error) {
       throw error;
     } finally {
       await repository.checkout('-');
-      // TODO: create a temp hre or set hre.config.paths.artifacts to avoid overwriting current compilation
+      // TODO: create a temp hre or set hre.config.paths.artifacts to avoid the need for recompilation
       await hre.run(TASK_COMPILE);
     }
   }
 
-  const storageLayout = await getStorageLayout(hre, fullName);
+  storageLayout = await getStorageLayout(hre, fullName);
 
   return collateStorageLayout(storageLayout);
 };
