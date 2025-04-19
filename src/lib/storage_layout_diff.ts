@@ -8,7 +8,7 @@ import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
 import assert from 'node:assert';
 import simpleGit from 'simple-git';
 
-export type StorageElement = {
+type StorageElement = {
   contract: string;
   label: string;
   offset: number;
@@ -16,7 +16,7 @@ export type StorageElement = {
   type: string;
 };
 
-export type StorageType = {
+type StorageType = {
   encoding: 'inplace' | 'mapping' | 'dynamic_array';
   label: string;
   numberOfBytes: string;
@@ -26,20 +26,13 @@ export type StorageType = {
   members?: StorageElement[];
 };
 
-export type StorageTypes = {
+type StorageTypes = {
   [name: string]: StorageType;
 };
 
-export type StorageLayout = {
+type StorageLayout = {
   storage: StorageElement[];
   types: StorageTypes;
-};
-
-export type ParsedStorageElement = Partial<
-  StorageElement & { size: number }
-> & {
-  bytesStart: number;
-  bytesEnd: number;
 };
 
 type CollatedSlotEntry = {
