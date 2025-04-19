@@ -1,12 +1,11 @@
 import pkg from '../../package.json';
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { HardhatPluginError } from 'hardhat/plugins';
-import type { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
+import type { HardhatRuntimeEnvironment } from 'hardhat/types/hre';
 import assert from 'node:assert';
-import simpleGit from 'simple-git';
+import fs from 'node:fs';
+import { simpleGit } from 'simple-git';
 
 type StorageElement = {
   contract: string;
@@ -101,24 +100,36 @@ export const getRawStorageLayout = async (
     await repository.checkout(ref);
 
     try {
-      await hre.run(TASK_COMPILE);
-      buildInfo = await hre.artifacts.getBuildInfo(fullName);
+      // TODO: import task name constant
+      await hre.tasks.getTask('compile').run();
+      const buildInfoId = await hre.artifacts.getBuildInfoId(fullName);
+      const buildInfoPath = await hre.artifacts.getBuildInfoOutputPath(
+        buildInfoId!,
+      );
+      buildInfo = JSON.parse(
+        await fs.promises.readFile(buildInfoPath!, 'utf-8'),
+      );
     } catch (error) {
       throw error;
     } finally {
       await repository.checkout('-');
       // TODO: create a temp hre or set hre.config.paths.artifacts to avoid the need for recompilation
-      await hre.run(TASK_COMPILE);
+      // TODO: import task name constant
+      await hre.tasks.getTask('compile').run();
     }
   } else {
-    buildInfo = await hre.artifacts.getBuildInfo(fullName);
+    const buildInfoId = await hre.artifacts.getBuildInfoId(fullName);
+    const buildInfoPath = await hre.artifacts.getBuildInfoOutputPath(
+      buildInfoId!,
+    );
+    buildInfo = JSON.parse(await fs.promises.readFile(buildInfoPath!, 'utf-8'));
   }
 
   if (!buildInfo) {
     throw new HardhatPluginError(pkg.name, `contract not found`);
   }
 
-  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
+  const [sourceName, contractName] = fullName.split(':');
 
   return (buildInfo.output.contracts[sourceName][contractName] as any)
     .storageLayout;
