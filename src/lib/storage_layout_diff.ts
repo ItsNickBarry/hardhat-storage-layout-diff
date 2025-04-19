@@ -98,24 +98,9 @@ export const visualizeSlot = (
 export const getRawStorageLayout = async (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
-): Promise<StorageLayout> => {
-  const info = await hre.artifacts.getBuildInfo(fullName);
-
-  if (!info) {
-    throw new HardhatPluginError(pkg.name, `contract not found at ref`);
-  }
-
-  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
-
-  return (info.output.contracts[sourceName][contractName] as any).storageLayout;
-};
-
-export const getCollatedStorageLayout = async function (
-  hre: HardhatRuntimeEnvironment,
-  fullName: string,
   ref?: string,
-) {
-  let storageLayout: StorageLayout;
+): Promise<StorageLayout> => {
+  let buildInfo;
 
   if (ref) {
     const repository = simpleGit();
@@ -124,7 +109,7 @@ export const getCollatedStorageLayout = async function (
 
     try {
       await hre.run(TASK_COMPILE);
-      storageLayout = await getRawStorageLayout(hre, fullName);
+      buildInfo = await hre.artifacts.getBuildInfo(fullName);
     } catch (error) {
       throw error;
     } finally {
@@ -132,11 +117,26 @@ export const getCollatedStorageLayout = async function (
       // TODO: create a temp hre or set hre.config.paths.artifacts to avoid the need for recompilation
       await hre.run(TASK_COMPILE);
     }
+  } else {
+    buildInfo = await hre.artifacts.getBuildInfo(fullName);
   }
 
-  storageLayout = await getRawStorageLayout(hre, fullName);
+  if (!buildInfo) {
+    throw new HardhatPluginError(pkg.name, `contract not found`);
+  }
 
-  return collateStorageLayout(storageLayout);
+  const { sourceName, contractName } = parseFullyQualifiedName(fullName);
+
+  return (buildInfo.output.contracts[sourceName][contractName] as any)
+    .storageLayout;
+};
+
+export const getCollatedStorageLayout = async function (
+  hre: HardhatRuntimeEnvironment,
+  fullName: string,
+  ref?: string,
+) {
+  return collateStorageLayout(await getRawStorageLayout(hre, fullName, ref));
 };
 
 export const collateStorageLayout = (
