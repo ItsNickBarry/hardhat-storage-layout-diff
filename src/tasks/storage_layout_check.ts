@@ -2,6 +2,7 @@ import {
   collateStorageLayout,
   loadStorageLayout,
   mergeCollatedSlots,
+  printMergedCollatedSlots,
 } from '../lib/storage_layout_diff';
 import { TASK_STORAGE_LAYOUT_CHECK } from '../task_names';
 import { task } from 'hardhat/config';
@@ -18,5 +19,5 @@ task(TASK_STORAGE_LAYOUT_CHECK)
     const slotsB = await loadStorageLayout(hre, b, bRef);
     const data = mergeCollatedSlots(slotsA, slotsB);
 
-    console.log(data);
+    printMergedCollatedSlots(data);
   });
