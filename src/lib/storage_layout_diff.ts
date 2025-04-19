@@ -42,6 +42,7 @@ export type ParsedStorageElement = Partial<
 type CollatedSlotEntry = {
   name: string;
   size: number;
+  offset: number;
   type: StorageType;
 };
 
@@ -270,14 +271,15 @@ export const collateStorageLayout = (
       const sizeReserved = Number(type.numberOfBytes);
       const sizeFilled = type.encoding === 'mapping' ? 0 : sizeReserved;
 
-      slot.sizeReserved += sizeReserved;
-      slot.sizeFilled += sizeFilled;
-
       slot.entries.push({
         name: element.label,
         size: sizeFilled,
+        offset: slot.sizeReserved,
         type,
       });
+
+      slot.sizeReserved += sizeReserved;
+      slot.sizeFilled += sizeFilled;
     }
 
     return slots;
