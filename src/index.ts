@@ -6,6 +6,7 @@ import './tasks/storage_layout_check';
 import './type_extensions';
 import type { StorageLayoutDiffConfig } from './types.js';
 import { extendConfig } from 'hardhat/config';
+import type { HardhatPlugin } from 'hardhat/types/plugins';
 
 // TODO: types may be incomplete
 
@@ -33,3 +34,10 @@ extendConfig(function (config, userConfig) {
     }
   }
 });
+
+const plugin: HardhatPlugin = {
+  id: pkg.name,
+  npmPackage: pkg.name,
+};
+
+export default plugin;
