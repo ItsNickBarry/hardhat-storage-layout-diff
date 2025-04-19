@@ -133,6 +133,8 @@ export const loadStorageLayout = async function (
     throw error;
   } finally {
     await repository.checkout('-');
+    // TODO: create a temp hre or set hre.config.paths.artifacts to avoid overwriting current compilation
+    await hre.run(TASK_COMPILE);
   }
 
   const storageLayout = await getStorageLayout(hre, fullName);
