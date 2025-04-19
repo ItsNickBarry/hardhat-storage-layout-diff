@@ -113,28 +113,22 @@ export const getStorageLayout = async (
 export const loadStorageLayout = async function (
   hre: HardhatRuntimeEnvironment,
   fullName: string,
-  ref: string,
+  ref?: string,
 ) {
-  const repository = simpleGit();
-  await repository.init();
-  const { latest } = await repository.log();
+  if (ref) {
+    const repository = simpleGit();
+    await repository.init();
+    await repository.checkout(ref);
 
-  // TODO: error if ref === 'HEAD'
-
-  if (!latest) {
-    throw new HardhatPluginError(pkg.name, 'ref error');
-  }
-
-  await repository.checkout(ref || latest.hash);
-
-  try {
-    await hre.run(TASK_COMPILE);
-  } catch (error) {
-    throw error;
-  } finally {
-    await repository.checkout('-');
-    // TODO: create a temp hre or set hre.config.paths.artifacts to avoid overwriting current compilation
-    await hre.run(TASK_COMPILE);
+    try {
+      await hre.run(TASK_COMPILE);
+    } catch (error) {
+      throw error;
+    } finally {
+      await repository.checkout('-');
+      // TODO: create a temp hre or set hre.config.paths.artifacts to avoid overwriting current compilation
+      await hre.run(TASK_COMPILE);
+    }
   }
 
   const storageLayout = await getStorageLayout(hre, fullName);
