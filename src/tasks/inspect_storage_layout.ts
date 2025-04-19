@@ -1,17 +1,21 @@
 import {
   getCollatedStorageLayout,
   printCollatedSlots,
-} from '../lib/storage_layout_diff';
-import { TASK_INSPECT_STORAGE_LAYOUT } from '../task_names';
-import { TASK_COMPILE } from 'hardhat/builtin-tasks/task-names';
+} from '../lib/storage_layout_diff.js';
+import { TASK_INSPECT_STORAGE_LAYOUT } from '../task_names.js';
 import { task } from 'hardhat/config';
 
-task(TASK_INSPECT_STORAGE_LAYOUT)
-  .addPositionalParam('contract', 'Contract whose storage layout to inspect')
+export default task(TASK_INSPECT_STORAGE_LAYOUT)
+  .addPositionalArgument({
+    name: 'contract',
+    description: 'Contract whose storage layout to inspect',
+  })
   .setAction(async (args, hre) => {
-    await hre.run(TASK_COMPILE);
+    // TODO: import task name constant
+    await hre.tasks.getTask('compile').run();
 
     const slots = await getCollatedStorageLayout(hre, args.contract);
 
     printCollatedSlots(slots);
-  });
+  })
+  .build();

@@ -3,21 +3,32 @@ import {
   getCollatedStorageLayout,
   mergeCollatedSlots,
   printMergedCollatedSlots,
-} from '../lib/storage_layout_diff';
-import { TASK_STORAGE_LAYOUT_CHECK } from '../task_names';
+} from '../lib/storage_layout_diff.js';
+import { TASK_STORAGE_LAYOUT_CHECK } from '../task_names.js';
 import { task } from 'hardhat/config';
 import fs from 'node:fs';
 
-task(TASK_STORAGE_LAYOUT_CHECK)
-  .addParam('source', 'Path to storage layout JSON')
-  .addParam('b', 'Contract to check against storage layout')
-  .addOptionalParam('bRef', 'Git reference where contract B is defined')
-  .setAction(async function ({ source, b, bRef }, hre) {
+export default task(TASK_STORAGE_LAYOUT_CHECK)
+  .addPositionalArgument({
+    name: 'source',
+    description: 'Path to storage layout JSON',
+  })
+  .addPositionalArgument({
+    name: 'b',
+    description: 'Contract to check against storage layout',
+  })
+  .addOption({
+    name: 'bRef',
+    description: 'Git reference where contract B is defined',
+    defaultValue: '',
+  })
+  .setAction(async (args, hre) => {
     const slotsA = collateStorageLayout(
-      JSON.parse(fs.readFileSync(source, 'utf-8')),
+      JSON.parse(fs.readFileSync(args.source, 'utf-8')),
     );
-    const slotsB = await getCollatedStorageLayout(hre, b, bRef);
+    const slotsB = await getCollatedStorageLayout(hre, args.b, args.bRef);
     const data = mergeCollatedSlots(slotsA, slotsB);
 
     printMergedCollatedSlots(data);
-  });
+  })
+  .build();

@@ -50,9 +50,9 @@ Include the optional `--a-ref` and/or `--b-ref` arguments to specify the git ref
 Compare a contract to an exported JSON layout:
 
 ```bash
-npx hardhat storage-layout-check --source [PATH_TO_LAYOUT_JSON] --b [CONTRACT_B_FULLY_QUALIFIED_NAME]
+npx hardhat storage-layout-check [PATH_TO_LAYOUT_JSON] [CONTRACT_B_FULLY_QUALIFIED_NAME]
 # or
-yarn run hardhat storage-layout-check --source [PATH_TO_LAYOUT_JSON] --b [CONTRACT_B_FULLY_QUALIFIED_NAME]
+yarn run hardhat storage-layout-check [PATH_TO_LAYOUT_JSON] [CONTRACT_B_FULLY_QUALIFIED_NAME]
 ```
 
 ## Development
